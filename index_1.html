@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Life Planner — แซม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0F0F10;--surface:#1A1A1C;--surface2:#242427;--border:#2E2E33;--accent:#7C6EF8;--accent2:#A99EFF;--green:#27C08A;--red:#E8604A;--yellow:#E8B84B;--blue:#378ADD;--text:#F0EFF8;--muted:#7A7A8A;--font:'IBM Plex Sans Thai',sans-serif;--mono:'IBM Plex Mono',monospace;--r:10px;--rsm:6px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+input,select,textarea{background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font);font-size:14px;padding:9px 12px;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+textarea{resize:vertical;min-height:70px;}
+button{cursor:pointer;font-family:var(--font);}
+.app{max-width:1000px;margin:0 auto;padding:1.5rem 1.25rem 4rem;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;flex-wrap:wrap;gap:10px;}
+.logo{font-family:var(--mono);font-size:13px;color:var(--accent2);letter-spacing:.04em;}
+.logo span{color:var(--muted);}
+.nav-tabs{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:3px;}
+.nav-tab{padding:6px 14px;font-size:13px;border:none;background:transparent;border-radius:4px;color:var(--muted);transition:all .15s;}
+.nav-tab.active{background:var(--accent);color:#fff;font-weight:500;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
+.cal-title{font-size:18px;font-weight:500;}
+.cal-controls{display:flex;gap:6px;align-items:center;}
+.view-toggle{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:3px;}
+.view-btn{padding:4px 12px;font-size:12px;border:none;background:transparent;border-radius:3px;color:var(--muted);transition:all .15s;}
+.view-btn.active{background:var(--surface2);color:var(--text);}
+.icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:var(--rsm);background:var(--surface);color:var(--muted);font-size:16px;display:flex;align-items:center;justify-content:center;transition:border-color .15s;}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent2);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day-label{text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono);padding:6px 0;letter-spacing:.06em;}
+.cal-cell{min-height:76px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 7px;cursor:pointer;transition:border-color .15s;}
+.cal-cell:hover{border-color:var(--accent);}
+.cal-cell.other{opacity:.3;}
+.cal-cell.today{border-color:var(--accent);}
+.cal-cell.today .day-num{color:var(--accent2);font-weight:600;}
+.day-num{font-size:12px;font-family:var(--mono);color:var(--muted);}
+.cell-events{margin-top:4px;display:flex;flex-direction:column;gap:2px;}
+.cell-chip{font-size:10px;background:rgba(124,110,248,.15);color:var(--accent2);border-radius:3px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dot-row{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;}
+.dot{width:6px;height:6px;border-radius:50%;}
+.dot-in{background:var(--green);}
+.dot-out{background:var(--red);}
+.dot-save{background:var(--yellow);}
+.dot-inv{background:var(--blue);}
+.week-grid{display:grid;grid-template-columns:48px repeat(7,1fr);gap:3px;}
+.week-col-head{text-align:center;padding:6px 4px;font-size:12px;color:var(--muted);}
+.week-col-head.today{color:var(--accent2);}
+.wday{font-size:11px;font-family:var(--mono);letter-spacing:.04em;}
+.wdate{font-size:18px;font-weight:500;margin-top:2px;}
+.week-time{font-size:11px;font-family:var(--mono);color:var(--muted);text-align:right;padding:8px 8px 0 0;}
+.week-cell{height:44px;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:pointer;}
+.week-cell:hover{border-color:var(--accent);}
+.panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:flex-start;justify-content:flex-end;}
+.panel-overlay.open{display:flex;}
+.day-panel{background:var(--surface);border-left:1px solid var(--border);width:440px;max-width:100vw;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.panel-head{padding:1.25rem 1.25rem 0;position:sticky;top:0;background:var(--surface);z-index:10;border-bottom:1px solid var(--border);}
+.panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}
+.panel-date-label{font-size:17px;font-weight:500;}
+.close-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:var(--rsm);background:transparent;color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center;}
+.close-btn:hover{border-color:var(--red);color:var(--red);}
+.panel-tabs{display:flex;}
+.panel-tab{padding:8px 18px;font-size:13px;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
+.panel-tab.active{color:var(--accent2);border-bottom-color:var(--accent);}
+.panel-body{padding:1.25rem;flex:1;}
+.event-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;}
+.event-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;}
+.event-time-col{font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:50px;padding-top:2px;}
+.event-info{flex:1;}
+.event-title-text{font-size:14px;font-weight:500;margin-bottom:3px;}
+.event-loc{font-size:12px;color:var(--muted);}
+.event-loc a{color:var(--blue);text-decoration:none;}
+.event-loc a:hover{text-decoration:underline;}
+.event-note-text{font-size:12px;color:var(--muted);margin-top:4px;font-style:italic;}
+.del-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.del-btn:hover{border-color:var(--red);color:var(--red);}
+.add-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:4px;}
+.form-heading{font-size:13px;font-weight:500;color:var(--accent2);margin-bottom:12px;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.btn-primary{background:var(--accent);border:none;border-radius:var(--rsm);color:#fff;font-size:13px;font-weight:500;padding:8px 18px;}
+.btn-primary:hover{opacity:.85;}
+.day-sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.day-sum-card{background:var(--bg);border-radius:var(--rsm);padding:10px 12px;}
+.day-sum-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.day-sum-val{font-size:16px;font-weight:500;font-family:var(--mono);}
+.pie-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.pie-item{display:grid;grid-template-columns:80px 1fr 36px 72px;gap:6px;align-items:center;font-size:12px;}
+.bar-track{background:var(--border);border-radius:3px;height:5px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.pct-text{font-family:var(--mono);color:var(--muted);text-align:right;}
+.day-tx-list{display:flex;flex-direction:column;gap:5px;}
+.tx-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);}
+.full-tx-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);}
+.tx-left{display:flex;align-items:center;gap:10px;}
+.tx-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.tx-ico.in{background:rgba(39,192,138,.12);}
+.tx-ico.out{background:rgba(232,96,74,.12);}
+.tx-ico.sav{background:rgba(232,184,75,.12);}
+.tx-ico.inv{background:rgba(55,138,221,.12);}
+.tx-name-text{font-size:13px;color:var(--text);}
+.tx-meta{font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:1px;}
+.tx-right{display:flex;align-items:center;gap:6px;}
+.tx-amt{font-size:13px;font-weight:500;font-family:var(--mono);}
+.tx-amt.pos{color:var(--green);}
+.tx-amt.neg{color:var(--red);}
+.tx-amt.yel{color:var(--yellow);}
+.tx-amt.blu{color:var(--blue);}
+.action-btn{width:24px;height:24px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;}
+.action-btn:hover{border-color:var(--red);color:var(--red);}
+.action-btn.edit:hover{border-color:var(--accent2);color:var(--accent2);}
+.fin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;}
+.fin-title{font-size:18px;font-weight:500;}
+.fin-actions{display:flex;gap:8px;align-items:center;}
+.month-sel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:var(--font);font-size:13px;padding:6px 10px;}
+.add-btn{background:var(--accent);border:none;border-radius:var(--rsm);color:#fff;font-size:13px;font-weight:500;padding:7px 16px;}
+.add-btn:hover{opacity:.85;}
+.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;}
+.sum-label{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.sum-value{font-size:20px;font-weight:500;font-family:var(--mono);}
+.section-label{font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
+.cat-list{display:flex;flex-direction:column;gap:7px;margin-bottom:1.75rem;}
+.cat-row{display:grid;grid-template-columns:90px 1fr 80px;gap:10px;align-items:center;}
+.cat-name{font-size:13px;}
+.cat-val{font-size:13px;font-family:var(--mono);color:var(--muted);text-align:right;}
+.full-tx-list{display:flex;flex-direction:column;gap:5px;}
+.port-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem;}
+.port-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;}
+.port-label{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.port-value{font-size:24px;font-weight:500;font-family:var(--mono);}
+.stock-list{display:flex;flex-direction:column;gap:6px;}
+.stock-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);}
+.stock-left{display:flex;align-items:center;gap:12px;}
+.stock-badge{background:rgba(124,110,248,.15);color:var(--accent2);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:12px;font-weight:500;min-width:60px;text-align:center;}
+.stock-name{font-size:14px;color:var(--text);}
+.stock-detail{font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:2px;}
+.stock-value{font-size:14px;font-weight:500;font-family:var(--mono);color:var(--text);text-align:right;}
+.stock-cost{font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:2px;text-align:right;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;width:390px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:500;margin-bottom:1.25rem;}
+.type-toggle{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.type-btn{padding:7px 4px;border:1px solid var(--border);border-radius:var(--rsm);background:var(--bg);color:var(--muted);font-size:11px;text-align:center;transition:all .15s;}
+.type-btn.t-income{border-color:var(--green);color:var(--green);background:rgba(39,192,138,.1);}
+.type-btn.t-expense{border-color:var(--red);color:var(--red);background:rgba(232,96,74,.1);}
+.type-btn.t-saving{border-color:var(--yellow);color:var(--yellow);background:rgba(232,184,75,.1);}
+.type-btn.t-invest{border-color:var(--blue);color:var(--blue);background:rgba(55,138,221,.1);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;}
+.btn-cancel{background:transparent;border:1px solid var(--border);border-radius:var(--rsm);color:var(--muted);font-size:13px;padding:7px 16px;}
+.btn-save{background:var(--accent);border:none;border-radius:var(--rsm);color:#fff;font-size:13px;font-weight:500;padding:7px 20px;}
+.empty{font-size:13px;color:var(--muted);padding:1.5rem 0;text-align:center;}
+@media(max-width:640px){.summary-row{grid-template-columns:repeat(2,1fr);}.port-summary{grid-template-columns:1fr;}.day-panel{width:100vw;}.type-toggle{grid-template-columns:repeat(2,1fr);}.cal-cell{min-height:54px;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">life-planner <span>/ แซม</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('calendar')">ปฏิทิน</button>
+      <button class="nav-tab" onclick="showPage('finance')">การเงิน</button>
+      <button class="nav-tab" onclick="showPage('portfolio')">พอร์ต</button>
+    </div>
+  </div>
+  <div id="page-calendar">
+    <div class="cal-header">
+      <div class="cal-title" id="cal-title"></div>
+      <div class="cal-controls">
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setCalView('month')">เดือน</button>
+          <button class="view-btn" onclick="setCalView('week')">สัปดาห์</button>
+        </div>
+        <button class="icon-btn" onclick="calNav(-1)">&#8592;</button>
+        <button class="icon-btn" onclick="calNav(1)">&#8594;</button>
+      </div>
+    </div>
+    <div id="cal-body"></div>
+  </div>
+  <div id="page-finance" style="display:none;">
+    <div class="fin-header">
+      <div class="fin-title">การเงิน</div>
+      <div class="fin-actions">
+        <select class="month-sel" id="fin-month" onchange="renderFinance()"></select>
+        <button class="add-btn" onclick="openTxModal(false)">+ เพิ่มรายการ</button>
+      </div>
+    </div>
+    <div class="summary-row">
+      <div class="sum-card"><div class="sum-label">รายรับ</div><div class="sum-value" style="color:var(--green)" id="s-income">฿0</div></div>
+      <div class="sum-card"><div class="sum-label">รายจ่าย</div><div class="sum-value" style="color:var(--red)" id="s-expense">฿0</div></div>
+      <div class="sum-card"><div class="sum-label">ออม</div><div class="sum-value" style="color:var(--yellow)" id="s-saving">฿0</div></div>
+      <div class="sum-card"><div class="sum-label">ลงทุน</div><div class="sum-value" style="color:var(--blue)" id="s-invest">฿0</div></div>
+    </div>
+    <div class="section-label">หมวดหมู่รายจ่าย</div>
+    <div class="cat-list" id="cat-list"></div>
+    <div class="section-label">รายการทั้งหมด</div>
+    <div class="full-tx-list" id="full-tx-list"></div>
+  </div>
+  <div id="page-portfolio" style="display:none;">
+    <div class="fin-header">
+      <div class="fin-title">พอร์ตการลงทุน</div>
+      <button class="add-btn" onclick="openStockModal()">+ เพิ่มหุ้น / กองทุน</button>
+    </div>
+    <div class="port-summary">
+      <div class="port-card"><div class="port-label">เงินออมสะสมทั้งหมด</div><div class="port-value" id="p-saving" style="color:var(--yellow)">฿0</div></div>
+      <div class="port-card"><div class="port-label">มูลค่าพอร์ต (ราคาทุน)</div><div class="port-value" id="p-invest" style="color:var(--blue)">฿0</div></div>
+    </div>
+    <div class="section-label">หุ้น / กองทุนในพอร์ต</div>
+    <div class="stock-list" id="stock-list"></div>
+  </div>
+</div>
+
+<div class="panel-overlay" id="panel-overlay" onclick="closePanelBg(event)">
+  <div class="day-panel">
+    <div class="panel-head">
+      <div class="panel-top">
+        <div class="panel-date-label" id="panel-date-label"></div>
+        <button class="close-btn" onclick="closePanel()">✕</button>
+      </div>
+      <div class="panel-tabs">
+        <button class="panel-tab active" onclick="setPanelTab('plan')">📅 วางแผน</button>
+        <button class="panel-tab" onclick="setPanelTab('fin')">💰 การเงิน</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div id="ptab-plan">
+        <div class="event-list" id="event-list"></div>
+        <div class="add-form">
+          <div class="form-heading">+ เพิ่มกิจกรรม</div>
+          <div class="field"><label>ชื่อกิจกรรม</label><input type="text" id="ev-title" placeholder="เช่น ประชุมลูกค้า"/></div>
+          <div class="row2">
+            <div class="field"><label>เวลาเริ่ม</label><input type="time" id="ev-start"/></div>
+            <div class="field"><label>เวลาสิ้นสุด</label><input type="time" id="ev-end"/></div>
+          </div>
+          <div class="field"><label>สถานที่</label><input type="text" id="ev-loc" placeholder="เช่น Central World, Bangkok"/></div>
+          <div class="field"><label>หมายเหตุ</label><textarea id="ev-note" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
+          <button class="btn-primary" onclick="saveEvent()">บันทึกกิจกรรม</button>
+        </div>
+      </div>
+      <div id="ptab-fin" style="display:none;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:1rem;">
+          <div class="day-sum-grid" id="day-sum-grid"></div>
+          <div class="pie-row" id="day-pie-row"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="section-label" style="margin-bottom:0;">รายการวันนี้</div>
+          <button class="btn-primary" style="font-size:12px;padding:5px 12px;" onclick="openTxModal(true)">+ เพิ่ม</button>
+        </div>
+        <div class="day-tx-list" id="day-tx-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tx-modal" onclick="closeTxBg(event)">
+  <div class="modal">
+    <div class="modal-title" id="tx-modal-title">เพิ่มรายการ</div>
+    <div class="field">
+      <label>ประเภท</label>
+      <div class="type-toggle">
+        <button class="type-btn t-income" id="tb-income" onclick="setTxType('income')">+ รายรับ</button>
+        <button class="type-btn" id="tb-expense" onclick="setTxType('expense')">− รายจ่าย</button>
+        <button class="type-btn" id="tb-saving" onclick="setTxType('saving')">🏦 ออม</button>
+        <button class="type-btn" id="tb-invest" onclick="setTxType('invest')">📈 ลงทุน</button>
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>รายการ</label><input type="text" id="f-name" placeholder="ชื่อรายการ"/></div>
+    <div class="field"><label>จำนวน (บาท)</label><input type="number" id="f-amount" placeholder="0"/></div>
+    <div class="field"><label>หมวดหมู่</label><select id="f-cat"></select></div>
+    <div class="field"><label>หมายเหตุ</label><input type="text" id="f-note" placeholder="เช่น บริษัท ABC / ร้านอาหาร XYZ"/></div>
+    <div class="field"><label>วันที่</label><input type="date" id="f-date"/></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTxModal()">ยกเลิก</button>
+      <button class="btn-save" onclick="saveTx()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="stock-modal" onclick="closeStockBg(event)">
+  <div class="modal">
+    <div class="modal-title">เพิ่มหุ้น / กองทุน</div>
+    <div class="field"><label>ชื่อย่อ (Ticker)</label><input type="text" id="s-ticker" placeholder="เช่น PTT, SCB, K-GLOBAL"/></div>
+    <div class="field"><label>ชื่อเต็ม</label><input type="text" id="s-fullname" placeholder="เช่น บมจ.ปตท."/></div>
+    <div class="field"><label>จำนวนหน่วย / หุ้น</label><input type="number" id="s-qty" placeholder="0"/></div>
+    <div class="field"><label>ราคาที่ซื้อ (บาท/หน่วย)</label><input type="number" id="s-price" placeholder="0.00"/></div>
+    <div class="field"><label>วันที่ซื้อ</label><input type="date" id="s-date"/></div>
+    <div class="field"><label>หมายเหตุ</label><input type="text" id="s-note" placeholder="เช่น ซื้อผ่าน Settrade"/></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeStockModal()">ยกเลิก</button>
+      <button class="btn-save" onclick="saveStock()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const DAYS=['อา','จ','อ','พ','พฤ','ศ','ส'];
+const CATS={income:['เงินเดือน','โปรเจกต์','ฟรีแลนซ์','ค่าเช่า','ดอกเบี้ย','โบนัส','อื่นๆ'],expense:['อาหาร','เดินทาง','ที่พัก','ช้อปปิ้ง','สุขภาพ','บันเทิง','สาธารณูปโภค','การศึกษา','อื่นๆ'],saving:['ออมทรัพย์','ฝากประจำ','กองทุนฉุกเฉิน','อื่นๆ'],invest:['หุ้น','กองทุนรวม','คริปโต','อสังหา','อื่นๆ']};
+const CC={อาหาร:'#7C6EF8',เดินทาง:'#27C08A',ที่พัก:'#E8604A',ช้อปปิ้ง:'#D4537E',สุขภาพ:'#378ADD',บันเทิง:'#BA7517',สาธารณูปโภค:'#6CBFA8',การศึกษา:'#A99EFF',อื่นๆ:'#7A7A8A'};
+const EM={อาหาร:'🍜',เดินทาง:'🚌',ที่พัก:'🏠',ช้อปปิ้ง:'🛍️',สุขภาพ:'💊',บันเทิง:'🎬',เงินเดือน:'💼',โปรเจกต์:'📐',ฟรีแลนซ์:'💻',ออมทรัพย์:'🏦',ฝากประจำ:'🏦',กองทุนฉุกเฉิน:'🛡️',หุ้น:'📈',กองทุนรวม:'📊',คริปโต:'₿',อสังหา:'🏢',สาธารณูปโภค:'💡',การศึกษา:'📚',ดอกเบี้ย:'💰',ค่าเช่า:'🏠',โบนัส:'🎁',อื่นๆ:'📌'};
+
+const today=new Date();
+let curMonth=today.getMonth(),curYear=today.getFullYear(),calView='month',weekOffset=0;
+let selectedDate='',panelTab='plan',txType='income',editTxId=null,fromPanel=false;
+let txs=JSON.parse(localStorage.getItem('lp3_txs')||'[]');
+let evs=JSON.parse(localStorage.getItem('lp3_evs')||'[]');
+let stocks=JSON.parse(localStorage.getItem('lp3_stocks')||'[]');
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function saveAll(){localStorage.setItem('lp3_txs',JSON.stringify(txs));localStorage.setItem('lp3_evs',JSON.stringify(evs));localStorage.setItem('lp3_stocks',JSON.stringify(stocks));}
+function fmt(n){return '฿'+(n||0).toLocaleString();}
+
+if(!txs.length){
+  const y=today.getFullYear(),m=String(today.getMonth()+1).padStart(2,'0');
+  txs=[
+    {id:uid(),type:'income',name:'เงินเดือน',amount:35000,cat:'เงินเดือน',note:'Design Studio Co.',date:`${y}-${m}-01`},
+    {id:uid(),type:'income',name:'โปรเจกต์ลูกค้า',amount:15000,cat:'โปรเจกต์',note:'คุณสมชาย',date:`${y}-${m}-05`},
+    {id:uid(),type:'expense',name:'ค่าเช่าห้อง',amount:8500,cat:'ที่พัก',note:'คอนโด Sukhumvit',date:`${y}-${m}-01`},
+    {id:uid(),type:'expense',name:'ค่าอาหาร',amount:4200,cat:'อาหาร',note:'',date:`${y}-${m}-10`},
+    {id:uid(),type:'expense',name:'Grab / BTS',amount:1800,cat:'เดินทาง',note:'',date:`${y}-${m}-12`},
+    {id:uid(),type:'saving',name:'ออมรายเดือน',amount:5000,cat:'ออมทรัพย์',note:'ธนาคารกสิกร',date:`${y}-${m}-01`},
+    {id:uid(),type:'invest',name:'ซื้อกองทุน K-Global',amount:3000,cat:'กองทุนรวม',note:'',date:`${y}-${m}-05`},
+  ];
+  saveAll();
+}
+
+function showPage(p){
+  ['calendar','finance','portfolio'].forEach(s=>document.getElementById('page-'+s).style.display=s===p?'':'none');
+  document.querySelectorAll('.nav-tab').forEach((b,i)=>b.classList.toggle('active',['calendar','finance','portfolio'][i]===p));
+  if(p==='finance'){setupFinMonth();renderFinance();}
+  if(p==='portfolio')renderPortfolio();
+}
+
+function setCalView(v){calView=v;document.querySelectorAll('.view-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&v==='month')||(i===1&&v==='week')));renderCal();}
+function calNav(d){if(calView==='month'){curMonth+=d;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}}else weekOffset+=d;renderCal();}
+function renderCal(){calView==='month'?renderMonth():renderWeek();}
+
+function renderMonth(){
+  document.getElementById('cal-title').textContent=MONTHS[curMonth]+' '+curYear;
+  const txMap={},evMap={};
+  txs.forEach(t=>{txMap[t.date]=txMap[t.date]||[];txMap[t.date].push(t.type);});
+  evs.forEach(e=>{evMap[e.date]=evMap[e.date]||[];evMap[e.date].push(e.title);});
+  const first=new Date(curYear,curMonth,1).getDay();
+  const dim=new Date(curYear,curMonth+1,0).getDate();
+  const prevDim=new Date(curYear,curMonth,0).getDate();
+  let html=DAYS.map(d=>'<div class="cal-day-label">'+d+'</div>').join('');
+  for(let i=0;i<first;i++)html+='<div class="cal-cell other"><div class="day-num">'+(prevDim-first+i+1)+'</div></div>';
+  for(let d=1;d<=dim;d++){
+    const ds=curYear+'-'+String(curMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isT=d===today.getDate()&&curMonth===today.getMonth()&&curYear===today.getFullYear();
+    const chips=(evMap[ds]||[]).slice(0,2).map(t=>'<div class="cell-chip">'+t+'</div>').join('');
+    const dots=(txMap[ds]||[]).map(t=>'<div class="dot dot-'+(t==='income'?'in':t==='saving'?'save':t==='invest'?'inv':'out')+'"></div>').join('');
+    html+='<div class="cal-cell'+(isT?' today':'')+'" onclick="openPanel(\''+ds+'\')"><div class="day-num">'+d+'</div><div class="cell-events">'+chips+'</div><div class="dot-row">'+dots+'</div></div>';
+  }
+  document.getElementById('cal-body').innerHTML='<div class="cal-grid">'+html+'</div>';
+}
+
+function renderWeek(){
+  const ws=new Date(today);ws.setDate(ws.getDate()-ws.getDay()+weekOffset*7);
+  const we=new Date(ws);we.setDate(we.getDate()+6);
+  document.getElementById('cal-title').textContent=ws.getDate()+' '+MONTHS[ws.getMonth()]+' – '+we.getDate()+' '+MONTHS[we.getMonth()]+' '+curYear;
+  let html='<div class="week-grid"><div></div>';
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);const isT=d.toDateString()===today.toDateString();html+='<div class="week-col-head'+(isT?' today':'')+'"><div class="wday">'+DAYS[i]+'</div><div class="wdate">'+d.getDate()+'</div></div>';}
+  [9,10,11,12,13,14,15,16,17,18].forEach(h=>{
+    html+='<div class="week-time">'+h+':00</div>';
+    for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');html+='<div class="week-cell" onclick="openPanel(\''+ds+'\')"></div>';}
+  });
+  document.getElementById('cal-body').innerHTML=html+'</div>';
+}
+
+function openPanel(ds){
+  selectedDate=ds;
+  const d=new Date(ds+'T00:00:00');
+  document.getElementById('panel-date-label').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+  setPanelTab('plan');
+  document.getElementById('panel-overlay').classList.add('open');
+}
+function closePanel(){document.getElementById('panel-overlay').classList.remove('open');}
+function closePanelBg(e){if(e.target.id==='panel-overlay')closePanel();}
+
+function setPanelTab(t){
+  panelTab=t;
+  document.querySelectorAll('.panel-tab').forEach((b,i)=>b.classList.toggle('active',(i===0&&t==='plan')||(i===1&&t==='fin')));
+  document.getElementById('ptab-plan').style.display=t==='plan'?'':'none';
+  document.getElementById('ptab-fin').style.display=t==='fin'?'':'none';
+  if(t==='plan')renderEventList();
+  if(t==='fin')renderDayFin();
+}
+
+function renderEventList(){
+  const list=evs.filter(e=>e.date===selectedDate).sort((a,b)=>a.start.localeCompare(b.start));
+  document.getElementById('event-list').innerHTML=list.length
+    ?list.map(e=>'<div class="event-card"><div class="event-time-col">'+(e.start||'–')+(e.end?'<br>'+e.end:'')+'</div><div class="event-info"><div class="event-title-text">'+e.title+'</div>'+(e.loc?'<div class="event-loc">📍 <a href="https://www.google.com/maps/search/'+encodeURIComponent(e.loc)+'" target="_blank">'+e.loc+'</a></div>':'')+(e.note?'<div class="event-note-text">'+e.note+'</div>':'')+'</div><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">✕</button></div>').join('')
+    :'<div class="empty">ยังไม่มีกิจกรรมวันนี้</div>';
+}
+
+function saveEvent(){
+  const title=document.getElementById('ev-title').value.trim();
+  if(!title)return;
+  evs.push({id:uid(),date:selectedDate,title,start:document.getElementById('ev-start').value,end:document.getElementById('ev-end').value,loc:document.getElementById('ev-loc').value.trim(),note:document.getElementById('ev-note').value.trim()});
+  saveAll();
+  ['ev-title','ev-start','ev-end','ev-loc','ev-note'].forEach(id=>document.getElementById(id).value='');
+  renderEventList();renderCal();
+}
+function deleteEvent(id){evs=evs.filter(e=>e.id!==id);saveAll();renderEventList();renderCal();}
+
+function renderDayFin(){
+  const f=txs.filter(t=>t.date===selectedDate);
+  const inc=f.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp=f.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const sav=f.filter(t=>t.type==='saving').reduce((s,t)=>s+t.amount,0);
+  const inv=f.filter(t=>t.type==='invest').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('day-sum-grid').innerHTML='<div class="day-sum-card"><div class="day-sum-label">รายรับ</div><div class="day-sum-val" style="color:var(--green)">'+fmt(inc)+'</div></div><div class="day-sum-card"><div class="day-sum-label">รายจ่าย</div><div class="day-sum-val" style="color:var(--red)">'+fmt(exp)+'</div></div><div class="day-sum-card"><div class="day-sum-label">ออม</div><div class="day-sum-val" style="color:var(--yellow)">'+fmt(sav)+'</div></div><div class="day-sum-card"><div class="day-sum-label">ลงทุน</div><div class="day-sum-val" style="color:var(--blue)">'+fmt(inv)+'</div></div>';
+  const catMap={};f.filter(t=>t.type==='expense').forEach(t=>{catMap[t.cat]=(catMap[t.cat]||0)+t.amount;});
+  const total=exp||1;
+  document.getElementById('day-pie-row').innerHTML=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{const pct=Math.round(v/total*100);return '<div class="pie-item"><span>'+(EM[c]||'•')+' '+c+'</span><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+(CC[c]||'#7C6EF8')+'"></div></div><span class="pct-text">'+pct+'%</span><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">'+fmt(v)+'</span></div>';}).join('')||'<div style="font-size:12px;color:var(--muted);padding:4px 0;">ยังไม่มีรายจ่ายวันนี้</div>';
+  document.getElementById('day-tx-list').innerHTML=f.length?f.map(t=>txCard(t,true)).join(''):'<div class="empty">ยังไม่มีรายการ</div>';
+}
+
+function txCard(t,isPanel){
+  const M={income:{cls:'pos',ico:'in',sign:'+'},expense:{cls:'neg',ico:'out',sign:'-'},saving:{cls:'yel',ico:'sav',sign:'-'},invest:{cls:'blu',ico:'inv',sign:'-'}};
+  const m=M[t.type]||M.expense;
+  const rc=isPanel?'tx-row':'full-tx-row';
+  return '<div class="'+rc+'"><div class="tx-left"><div class="tx-ico '+m.ico+'">'+(EM[t.cat]||'•')+'</div><div><div class="tx-name-text">'+t.name+'</div><div class="tx-meta">'+t.cat+(t.note?' · '+t.note:'')+'</div></div></div><div class="tx-right"><div class="tx-amt '+m.cls+'">'+m.sign+fmt(t.amount)+'</div><button class="action-btn edit" onclick="editTx(\''+t.id+'\')">✎</button><button class="action-btn" onclick="deleteTx(\''+t.id+'\')">✕</button></div></div>';
+}
+
+function setupFinMonth(){
+  const sel=document.getElementById('fin-month');sel.innerHTML='';
+  for(let i=0;i<12;i++){const o=document.createElement('option');o.value=i;o.textContent=MONTHS[i]+' '+curYear;if(i===today.getMonth())o.selected=true;sel.appendChild(o);}
+}
+function renderFinance(){
+  const m=parseInt(document.getElementById('fin-month').value);
+  const f=txs.filter(t=>{const d=new Date(t.date);return d.getMonth()===m&&d.getFullYear()===curYear;});
+  const inc=f.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp=f.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const sav=f.filter(t=>t.type==='saving').reduce((s,t)=>s+t.amount,0);
+  const inv=f.filter(t=>t.type==='invest').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('s-income').textContent=fmt(inc);
+  document.getElementById('s-expense').textContent=fmt(exp);
+  document.getElementById('s-saving').textContent=fmt(sav);
+  document.getElementById('s-invest').textContent=fmt(inv);
+  const catMap={};f.filter(t=>t.type==='expense').forEach(t=>{catMap[t.cat]=(catMap[t.cat]||0)+t.amount;});
+  const maxV=Math.max(...Object.values(catMap),1);
+  document.getElementById('cat-list').innerHTML=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([c,v])=>'<div class="cat-row"><div class="cat-name">'+(EM[c]||'•')+' '+c+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(v/maxV*100)+'%;background:'+(CC[c]||'#7C6EF8')+'"></div></div><div class="cat-val">'+fmt(v)+'</div></div>').join('')||'<div class="empty">ยังไม่มีรายจ่ายเดือนนี้</div>';
+  document.getElementById('full-tx-list').innerHTML=[...f].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(t=>txCard(t,false)).join('')||'<div class="empty">ยังไม่มีรายการเดือนนี้</div>';
+}
+
+function renderPortfolio(){
+  const totSav=txs.filter(t=>t.type==='saving').reduce((s,t)=>s+t.amount,0);
+  const totInv=stocks.reduce((s,st)=>s+st.qty*st.price,0);
+  document.getElementById('p-saving').textContent=fmt(totSav);
+  document.getElementById('p-invest').textContent=fmt(totInv);
+  document.getElementById('stock-list').innerHTML=stocks.length
+    ?stocks.map(st=>'<div class="stock-row"><div class="stock-left"><div class="stock-badge">'+st.ticker+'</div><div><div class="stock-name">'+st.fullname+'</div><div class="stock-detail">'+st.qty.toLocaleString()+' หน่วย × ฿'+st.price.toLocaleString()+' · '+st.date+(st.note?' · '+st.note:'')+'</div></div></div><div style="display:flex;align-items:center;gap:8px;"><div><div class="stock-value">'+fmt(st.qty*st.price)+'</div><div class="stock-cost">ราคาทุนรวม</div></div><button class="action-btn" onclick="deleteStock(\''+st.id+'\')">✕</button></div></div>').join('')
+    :'<div class="empty">ยังไม่มีหุ้นในพอร์ต</div>';
+}
+
+function openTxModal(fp){
+  fromPanel=!!fp;editTxId=null;
+  document.getElementById('tx-modal-title').textContent='เพิ่มรายการ';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-amount').value='';
+  document.getElementById('f-note').value='';
+  document.getElementById('f-date').value=fromPanel?selectedDate:today.toISOString().split('T')[0];
+  setTxType('income');
+  document.getElementById('tx-modal').classList.add('open');
+}
+function editTx(id){
+  const t=txs.find(x=>x.id===id);if(!t)return;
+  editTxId=id;fromPanel=false;
+  document.getElementById('tx-modal-title').textContent='แก้ไขรายการ';
+  document.getElementById('f-name').value=t.name;
+  document.getElementById('f-amount').value=t.amount;
+  document.getElementById('f-note').value=t.note||'';
+  document.getElementById('f-date').value=t.date;
+  setTxType(t.type);
+  setTimeout(()=>document.getElementById('f-cat').value=t.cat,20);
+  document.getElementById('tx-modal').classList.add('open');
+}
+function closeTxModal(){document.getElementById('tx-modal').classList.remove('open');}
+function closeTxBg(e){if(e.target.id==='tx-modal')closeTxModal();}
+function setTxType(t){
+  txType=t;
+  document.getElementById('f-cat').innerHTML=CATS[t].map(c=>'<option>'+c+'</option>').join('');
+  ['income','expense','saving','invest'].forEach(x=>document.getElementById('tb-'+x).className='type-btn'+(x===t?' t-'+x:''));
+}
+function deleteTx(id){
+  txs=txs.filter(t=>t.id!==id);saveAll();renderCal();
+  if(panelTab==='fin')renderDayFin();
+  if(document.getElementById('page-finance').style.display!=='none')renderFinance();
+}
+function saveTx(){
+  const name=document.getElementById('f-name').value.trim();
+  const amount=parseFloat(document.getElementById('f-amount').value);
+  const cat=document.getElementById('f-cat').value;
+  const note=document.getElementById('f-note').value.trim();
+  const date=document.getElementById('f-date').value;
+  if(!name||!amount||!date)return;
+  if(editTxId){const i=txs.findIndex(t=>t.id===editTxId);if(i>-1)txs[i]={...txs[i],type:txType,name,amount,cat,note,date};}
+  else txs.push({id:uid(),type:txType,name,amount,cat,note,date});
+  saveAll();closeTxModal();renderCal();
+  if(fromPanel&&panelTab==='fin')renderDayFin();
+  if(document.getElementById('page-finance').style.display!=='none')renderFinance();
+}
+
+function openStockModal(){
+  document.getElementById('s-date').value=today.toISOString().split('T')[0];
+  ['s-ticker','s-fullname','s-qty','s-price','s-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stock-modal').classList.add('open');
+}
+function closeStockModal(){document.getElementById('stock-modal').classList.remove('open');}
+function closeStockBg(e){if(e.target.id==='stock-modal')closeStockModal();}
+function deleteStock(id){stocks=stocks.filter(s=>s.id!==id);saveAll();renderPortfolio();}
+function saveStock(){
+  const ticker=document.getElementById('s-ticker').value.trim().toUpperCase();
+  const fullname=document.getElementById('s-fullname').value.trim()||ticker;
+  const qty=parseFloat(document.getElementById('s-qty').value);
+  const price=parseFloat(document.getElementById('s-price').value);
+  const date=document.getElementById('s-date').value;
+  const note=document.getElementById('s-note').value.trim();
+  if(!ticker||!qty||!price||!date)return;
+  stocks.push({id:uid(),ticker,fullname,qty,price,date,note});
+  saveAll();closeStockModal();renderPortfolio();
+}
+
+renderCal();
+</script>
+</body>
+</html>
